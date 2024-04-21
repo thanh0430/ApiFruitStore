@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ApiFruitStore.Data;
+using Microsoft.AspNetCore.Cors;
 
 namespace ApiFruitStore.Controllers
 {
@@ -22,26 +23,22 @@ namespace ApiFruitStore.Controllers
 
         // GET: api/Products
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Products>>> GetProducts()
+        public async Task<ActionResult<IEnumerable<Products>>> GetProducts(int pageNumber = 1, int pageSize = 12)
         {
-          if (_context.Products == null)
-          {
-              return NotFound();
-          }
-            return await _context.Products.ToListAsync();
+            var products = await _context.Products
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+            return Ok(products);
         }
 
         // GET: api/Products/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<Products>> GetProducts(int id)
+        public async Task<ActionResult<IEnumerable<Products>>> GetProducts(int id)
         {
-          if (_context.Products == null)
-          {
-              return NotFound();
-          }
-            var products = await _context.Products.FindAsync(id);
+            var products = await _context.Products.Where(p => p.Id == id).ToListAsync();
 
-            if (products == null)
+            if (products == null || !products.Any())
             {
                 return NotFound();
             }
@@ -83,16 +80,29 @@ namespace ApiFruitStore.Controllers
         // POST: api/Products
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<Products>> PostProducts(Products products)
+        [EnableCors("FruitStorePolicy")]
+        public IActionResult PostProducts([FromForm] Products products)
         {
-          if (_context.Products == null)
-          {
-              return Problem("Entity set 'FruitStoreContext.Products'  is null.");
-          }
-            _context.Products.Add(products);
-            await _context.SaveChangesAsync();
+            if (products == null)
+            {
+                return BadRequest("Dữ liệu sản phẩm không hợp lệ.");
+                
+            }
 
-            return CreatedAtAction("GetProducts", new { id = products.Id }, products);
+            try
+            {
+                _context.Products.Add(products);
+                _context.SaveChanges();
+
+                return Ok(new { message = "Thêm sản phẩm thành công" });
+            }
+            catch (Exception ex)
+            {
+                // Lỗi xác nhận
+                var validationErrors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage);
+
+                return BadRequest($"Lỗi khi thêm sản phẩm: {string.Join("; ", validationErrors)}");
+            }
         }
 
         // DELETE: api/Products/5

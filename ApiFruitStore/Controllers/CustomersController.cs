@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ApiFruitStore.Data;
+using ApiFruitStore.Repository;
+using ApiFruitStore.Models;
 
 namespace ApiFruitStore.Controllers
 {
@@ -14,10 +16,12 @@ namespace ApiFruitStore.Controllers
     public class CustomersController : ControllerBase
     {
         private readonly FruitStoreContext _context;
+        private readonly IAccountRepository AccountRepo;
 
-        public CustomersController(FruitStoreContext context)
+        public CustomersController(FruitStoreContext context, IAccountRepository repo)
         {
             _context = context;
+            AccountRepo = repo;
         }
 
         // GET: api/Customers
@@ -83,16 +87,71 @@ namespace ApiFruitStore.Controllers
         // POST: api/Customers
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
+
+        // Phương thức kiểm tra email có đúng định dạng không
         public async Task<ActionResult<Customers>> PostCustomers(Customers customers)
         {
-          if (_context.Customers == null)
-          {
-              return Problem("Entity set 'FruitStoreContext.Customers'  is null.");
-          }
-            _context.Customers.Add(customers);
-            await _context.SaveChangesAsync();
+            try
+            {
+                // Kiểm tra xem email có đúng định dạng không
+                if (!IsValidEmail(customers.Email))
+                {
+                    return BadRequest("Email chưa đúng định dạng.");
+                }
 
-            return CreatedAtAction("GetCustomers", new { id = customers.Id }, customers);
+                // Kiểm tra độ dài của password
+                if (string.IsNullOrEmpty(customers.Password) || customers.Password.Length < 8)
+                {
+                    return BadRequest("Password ít nhất phải 8 kí tự.");
+                }
+
+                // Kiểm tra xem email đã tồn tại trong cơ sở dữ liệu chưa
+                var existingCustomer = await _context.Customers.FirstOrDefaultAsync(c => c.Email == customers.Email);
+                if (existingCustomer != null)
+                {
+                    return Conflict("Email đã tồn tại.");
+                }
+
+                if (_context.Customers == null)
+                {
+                    return Problem("Entity set 'FruitStoreContext.Customers'  is null.");
+                }
+
+                _context.Customers.Add(customers);
+                await _context.SaveChangesAsync();
+
+                return CreatedAtAction("GetCustomers", new { id = customers.Id }, customers);
+            }
+            catch (Exception ex)
+            {
+                // Xử lý bất kỳ lỗi nào xảy ra
+                return StatusCode(500, $"Lỗi: {ex.Message}");
+            }
+        }
+
+        // Phương thức kiểm tra email có đúng định dạng không
+        private bool IsValidEmail(string email)
+        {
+            try
+            {
+                var addr = new System.Net.Mail.MailAddress(email);
+                return addr.Address == email;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+       [HttpPost("SignIn")]
+        public async Task<IActionResult> SignIn(SignIn signIn)
+        {
+            var result = await AccountRepo.SignInAsync(signIn);
+            if (string.IsNullOrEmpty(result))
+            {
+                return Unauthorized();
+            }
+            return Ok(result);
         }
 
         // DELETE: api/Customers/5

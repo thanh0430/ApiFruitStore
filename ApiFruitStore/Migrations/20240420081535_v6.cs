@@ -4,20 +4,13 @@
 
 namespace ApiFruitStore.Migrations
 {
-    public partial class v4 : Migration
+    public partial class v6 : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.AddColumn<string>(
                 name: "Image",
-                table: "Products",
-                type: "nvarchar(max)",
-                nullable: false,
-                defaultValue: "");
-
-            migrationBuilder.AddColumn<string>(
-                name: "Image",
-                table: "ProductCategories",
+                table: "Warehouse",
                 type: "nvarchar(max)",
                 nullable: false,
                 defaultValue: "");
@@ -27,11 +20,7 @@ namespace ApiFruitStore.Migrations
         {
             migrationBuilder.DropColumn(
                 name: "Image",
-                table: "Products");
-
-            migrationBuilder.DropColumn(
-                name: "Image",
-                table: "ProductCategories");
+                table: "Warehouse");
         }
     }
 }

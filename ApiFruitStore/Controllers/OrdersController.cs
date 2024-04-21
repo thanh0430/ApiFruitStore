@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ApiFruitStore.Data;
+using ApiFruitStore.Models;
+using ApiFruitStore.Services;
 
 namespace ApiFruitStore.Controllers
 {
@@ -14,52 +16,49 @@ namespace ApiFruitStore.Controllers
     public class OrdersController : ControllerBase
     {
         private readonly FruitStoreContext _context;
+        private readonly IVnpayServices _vnpPayment;
 
-        public OrdersController(FruitStoreContext context)
+        public OrdersController(FruitStoreContext context, IVnpayServices vnpPayment)
         {
             _context = context;
+            _vnpPayment = vnpPayment;
         }
 
-        // GET: api/Orders
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Orders>>> GetOrders()
+        public async Task<ActionResult<IEnumerable<Orders>>> GetOrders(int pageNumber = 1, int pageSize = 10)
         {
-          if (_context.Orders == null)
-          {
-              return NotFound();
-          }
-            return await _context.Orders.ToListAsync();
+            try
+            {
+                var orders = await _context.Orders
+                    .Skip((pageNumber - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToListAsync();
+
+                return Ok(orders);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"An error occurred while retrieving orders: {ex.Message}");
+            }
         }
 
-        // GET: api/Orders/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<Orders>> GetOrders(int id)
+        public async Task<ActionResult<Orders>> GetOrder(int id)
         {
-          if (_context.Orders == null)
-          {
-              return NotFound();
-          }
-            var orders = await _context.Orders.FindAsync(id);
-
-            if (orders == null)
-            {
+            var order = await _context.Orders.FindAsync(id);
+            if (order == null)
                 return NotFound();
-            }
 
-            return orders;
+            return order;
         }
 
-        // PUT: api/Orders/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutOrders(int id, Orders orders)
+        public async Task<IActionResult> UpdateOrder(int id, Orders order)
         {
-            if (id != orders.Id)
-            {
+            if (id != order.Id)
                 return BadRequest();
-            }
 
-            _context.Entry(orders).State = EntityState.Modified;
+            _context.Entry(order).State = EntityState.Modified;
 
             try
             {
@@ -67,57 +66,48 @@ namespace ApiFruitStore.Controllers
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (!OrdersExists(id))
-                {
+                if (!OrderExists(id))
                     return NotFound();
-                }
                 else
-                {
                     throw;
-                }
             }
 
             return NoContent();
         }
 
-        // POST: api/Orders
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<Orders>> PostOrders(Orders orders)
+        public async Task<ActionResult<Orders>> CreateOrder(Orders order)
         {
-          if (_context.Orders == null)
-          {
-              return Problem("Entity set 'FruitStoreContext.Orders'  is null.");
-          }
-            _context.Orders.Add(orders);
+            _context.Orders.Add(order);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetOrders", new { id = orders.Id }, orders);
+            return CreatedAtAction(nameof(GetOrder), new { id = order.Id }, order);
         }
 
-        // DELETE: api/Orders/5
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteOrders(int id)
+        public async Task<IActionResult> DeleteOrder(int id)
         {
-            if (_context.Orders == null)
-            {
+                        var order = await _context.Orders.FindAsync(id);
+            if (order == null)
                 return NotFound();
-            }
-            var orders = await _context.Orders.FindAsync(id);
-            if (orders == null)
-            {
-                return NotFound();
-            }
 
-            _context.Orders.Remove(orders);
+            _context.Orders.Remove(order);
             await _context.SaveChangesAsync();
 
             return NoContent();
         }
-
-        private bool OrdersExists(int id)
+        [HttpPost("ProcessPayment")]
+        public async Task<IActionResult> ProcessPayment(VnPaymentRequestModel paymentRequest)
         {
-            return (_context.Orders?.Any(e => e.Id == id)).GetValueOrDefault();
+            var result = await _vnpPayment.CreatePaymentUrl(HttpContext, paymentRequest);
+            if (result == null)
+                return Unauthorized();
+
+            return Ok(result);
+        }
+            private bool OrderExists(int id)
+        {
+            return _context.Orders.Any(e => e.Id == id);
         }
     }
 }

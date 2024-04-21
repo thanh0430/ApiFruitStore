@@ -12,14 +12,14 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ApiFruitStore.Migrations
 {
     [DbContext(typeof(FruitStoreContext))]
-    [Migration("20240403152842_v2")]
-    partial class v2
+    [Migration("20240419074526_v5")]
+    partial class v5
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "6.0.28")
+                .HasAnnotation("ProductVersion", "6.0.29")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder, 1L, 1);
@@ -33,15 +33,15 @@ namespace ApiFruitStore.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
 
                     b.Property<string>("Address")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Email")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Name")
-                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Password")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("PhoneNumber")
@@ -74,10 +74,6 @@ namespace ApiFruitStore.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("IdOrder");
-
-                    b.HasIndex("IdProduct");
-
                     b.ToTable("OrderDetails");
                 });
 
@@ -95,12 +91,10 @@ namespace ApiFruitStore.Migrations
                     b.Property<DateTime>("Orderdate")
                         .HasColumnType("datetime2");
 
-                    b.Property<float>("PriceOrders")
+                    b.Property<float>("PriceSum")
                         .HasColumnType("real");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("IdCustomers");
 
                     b.ToTable("Orders");
                 });
@@ -114,6 +108,10 @@ namespace ApiFruitStore.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
 
                     b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Image")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("productcategory")
@@ -133,7 +131,14 @@ namespace ApiFruitStore.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
 
+                    b.Property<int>("CategoryID")
+                        .HasColumnType("int");
+
                     b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Image")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Name")
@@ -151,34 +156,35 @@ namespace ApiFruitStore.Migrations
                     b.ToTable("Products");
                 });
 
-            modelBuilder.Entity("ApiFruitStore.Data.OrderDetails", b =>
+            modelBuilder.Entity("ApiFruitStore.Data.Warehouse", b =>
                 {
-                    b.HasOne("ApiFruitStore.Data.Orders", "Orders")
-                        .WithMany()
-                        .HasForeignKey("IdOrder")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
 
-                    b.HasOne("ApiFruitStore.Data.Products", "Products")
-                        .WithMany()
-                        .HasForeignKey("IdProduct")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
 
-                    b.Navigation("Orders");
+                    b.Property<DateTime?>("Datereceived")
+                        .HasColumnType("datetime2");
 
-                    b.Navigation("Products");
-                });
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
 
-            modelBuilder.Entity("ApiFruitStore.Data.Orders", b =>
-                {
-                    b.HasOne("ApiFruitStore.Data.Customers", "CustomerId")
-                        .WithMany()
-                        .HasForeignKey("IdCustomers")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                    b.Property<float?>("Price")
+                        .HasColumnType("real");
 
-                    b.Navigation("CustomerId");
+                    b.Property<int>("Productname")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Unit")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Warehouse");
                 });
 #pragma warning restore 612, 618
         }
