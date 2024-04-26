@@ -12,7 +12,9 @@ namespace ApiFruitStore.Data
         public int IdOrder { get; set; }
         
         public int  IdProduct { get; set; }
+
         public float Price { get; set; }
+
         public int Quantity { get; set; }
 
       

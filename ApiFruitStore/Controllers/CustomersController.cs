@@ -143,15 +143,36 @@ namespace ApiFruitStore.Controllers
             }
         }
 
-       [HttpPost("SignIn")]
+        [HttpPost("SignIn")]
         public async Task<IActionResult> SignIn(SignIn signIn)
         {
-            var result = await AccountRepo.SignInAsync(signIn);
-            if (string.IsNullOrEmpty(result))
+            try
             {
-                return Unauthorized();
+                var user = await _context.Customers.SingleOrDefaultAsync(p => p.Email == signIn.Email);
+
+                if (user == null || user.Password != signIn.Password)
+                {
+                    return BadRequest(new
+                    {
+                        Success = false,
+                        Message = "Bạn đã nhập sai tài khoản hoặc mật khẩu"
+                    });
+                }
+
+                var result = await AccountRepo.SignInAsync(signIn);
+
+                if (string.IsNullOrEmpty(result))
+                {
+                    return Unauthorized();
+                }
+
+                return Ok(result);
             }
-            return Ok(result);
+            catch (Exception ex)
+            {
+                // Ghi log lỗi vào hệ thống
+                return StatusCode(StatusCodes.Status500InternalServerError, "Internal server error");
+            }
         }
 
         // DELETE: api/Customers/5

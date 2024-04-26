@@ -21,8 +21,6 @@ namespace ApiFruitStore.Models
         [Required]
         public string FullName { get; set; }
         [Required]
-        public string Dessrition {  get; set; }
-        [Required]
         public Double Amount { get; set; }
         [Required]
         public DateTime CreatedDate { get; set; }

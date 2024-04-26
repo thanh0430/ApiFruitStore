@@ -10,10 +10,19 @@ namespace ApiFruitStore.Data
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
-        public int  IdCustomers { get; set; }   
-        public float PriceSum { get; set; }
-        public DateTime Orderdate  { get; set; }
-       
 
+        public float PriceSum { get; set; }
+
+        public DateTime Orderdate  { get; set; }  
+
+        public string? Image { get; set; } 
+
+        public string? ProductName { get; set; }
+
+        public string Fullname { get; set; }
+
+        public string Address { get; set; }
+
+        public int PhoneNumber { get; set; }
     }
 }
