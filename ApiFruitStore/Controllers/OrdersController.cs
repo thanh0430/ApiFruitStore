@@ -105,7 +105,7 @@ namespace ApiFruitStore.Controllers
 
             return Ok(result);
         }
-            private bool OrderExists(int id)
+        private bool OrderExists(int id)
         {
             return _context.Orders.Any(e => e.Id == id);
         }

@@ -87,40 +87,36 @@ namespace ApiFruitStore.Controllers
         // POST: api/Customers
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-
-        // Phương thức kiểm tra email có đúng định dạng không
-        public async Task<ActionResult<Customers>> PostCustomers(Customers customers)
+        public async Task<ActionResult<SignIn>> PostTaiKhoan(SignIn SignIn)
         {
             try
             {
                 // Kiểm tra xem email có đúng định dạng không
-                if (!IsValidEmail(customers.Email))
+                if (!IsValidEmail(SignIn.Email))
                 {
                     return BadRequest("Email chưa đúng định dạng.");
                 }
-
+                Customers taikhoan = new Customers();
+                taikhoan.Email = SignIn.Email;
+                taikhoan.Password = SignIn.Password;
+                taikhoan.Role = "user";
                 // Kiểm tra độ dài của password
-                if (string.IsNullOrEmpty(customers.Password) || customers.Password.Length < 8)
+                if (string.IsNullOrEmpty(taikhoan.Password) || taikhoan.Password.Length < 8)
                 {
                     return BadRequest("Password ít nhất phải 8 kí tự.");
                 }
 
-                // Kiểm tra xem email đã tồn tại trong cơ sở dữ liệu chưa
-                var existingCustomer = await _context.Customers.FirstOrDefaultAsync(c => c.Email == customers.Email);
+                var existingCustomer = await _context.Customers.FirstOrDefaultAsync(c => c.Email == taikhoan.Email);
                 if (existingCustomer != null)
                 {
                     return Conflict("Email đã tồn tại.");
                 }
 
-                if (_context.Customers == null)
-                {
-                    return Problem("Entity set 'FruitStoreContext.Customers'  is null.");
-                }
-
-                _context.Customers.Add(customers);
+                _context.Customers.Add(taikhoan);
                 await _context.SaveChangesAsync();
 
-                return CreatedAtAction("GetCustomers", new { id = customers.Id }, customers);
+                // Sửa lại tên hành động thành "GetTaiKhoan" ở đây
+                return CreatedAtAction(nameof(GetCustomers), new { id = taikhoan.Id }, taikhoan);
             }
             catch (Exception ex)
             {
@@ -128,7 +124,6 @@ namespace ApiFruitStore.Controllers
                 return StatusCode(500, $"Lỗi: {ex.Message}");
             }
         }
-
         // Phương thức kiểm tra email có đúng định dạng không
         private bool IsValidEmail(string email)
         {
@@ -148,7 +143,12 @@ namespace ApiFruitStore.Controllers
         {
             try
             {
-                var user = await _context.Customers.SingleOrDefaultAsync(p => p.Email == signIn.Email);
+                Customers customers = new Customers();
+                customers.Email = signIn.Email;
+                customers.Password = signIn.Password;
+                customers.Role = "user";
+                var user = await _context.Customers.SingleOrDefaultAsync(p => p.Email == signIn.Email && p.Role == "user");
+
 
                 if (user == null || user.Password != signIn.Password)
                 {
@@ -171,6 +171,76 @@ namespace ApiFruitStore.Controllers
             catch (Exception ex)
             {
                 // Ghi log lỗi vào hệ thống
+                return StatusCode(StatusCodes.Status500InternalServerError, "Internal server error");
+            }
+        }
+        [HttpPost("admindk")]
+        public async Task<ActionResult<Customers>> Postadmindk(Customers taikhoan)
+        {
+            try
+            {
+                // Kiểm tra xem email có đúng định dạng không
+                if (!IsValidEmail(taikhoan.Email))
+                {
+                    return BadRequest("Email chưa đúng định dạng.");
+                }
+
+                // Kiểm tra độ dài của password
+                if (string.IsNullOrEmpty(taikhoan.Password) || taikhoan.Password.Length < 8)
+                {
+                    return BadRequest("Password ít nhất phải 8 kí tự.");
+                }
+
+                var existingCustomer = await _context.Customers.FirstOrDefaultAsync(c => c.Email == taikhoan.Email);
+                if (existingCustomer != null)
+                {
+                    return Conflict("Email đã tồn tại.");
+                }
+
+                _context.Customers.Add(taikhoan);
+                await _context.SaveChangesAsync();
+
+                // Sửa lại tên hành động thành "GetTaiKhoan" ở đây
+                return CreatedAtAction(nameof(GetCustomers), new { id = taikhoan.Id }, taikhoan);
+            }
+            catch (Exception ex)
+            {
+                // Xử lý bất kỳ lỗi nào xảy ra
+                return StatusCode(500, $"Lỗi: {ex.Message}");
+            }
+        }
+        [HttpPost("SignInadmin")]
+        public async Task<IActionResult> SignInadmin(SignIn taiKhoanadmin)
+        {
+            try
+            {
+                Customers taiKhoan = new Customers();
+                taiKhoan.Role = "admin";
+                taiKhoan.Email = taiKhoanadmin.Email;
+                taiKhoan.Password = taiKhoanadmin.Password;
+                var user = await _context.Customers.SingleOrDefaultAsync(p => p.Email == taiKhoan.Email && p.Role == "admin");
+
+                if (user == null || user.Password != taiKhoan.Password)
+                {
+                    return BadRequest(new
+                    {
+                        Success = false,
+                        Message = "Bạn đã nhập sai tài khoản hoặc mật khẩu"
+                    });
+                }
+
+                var result = await AccountRepo.SignInAsync(taiKhoanadmin);
+
+                if (string.IsNullOrEmpty(result))
+                {
+                    return Unauthorized();
+                }
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+
                 return StatusCode(StatusCodes.Status500InternalServerError, "Internal server error");
             }
         }

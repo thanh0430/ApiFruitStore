@@ -17,11 +17,12 @@ builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-
 builder.Services.AddScoped<IAccountRepository, AccountRepository>();
 
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
     .AddEntityFrameworkStores<FruitStoreContext>().AddDefaultTokenProviders();
+
+
 builder.Services.AddAuthentication(Option =>
 {
     Option.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
